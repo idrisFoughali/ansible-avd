@@ -125,6 +125,24 @@ router bgp {{ router_bgp.as }}
 {%         if router_bgp.neighbors[neighbor].route_map_out is arista.avd.defined %}
    neighbor {{ neighbor }} route-map {{ router_bgp.neighbors[neighbor].route_map_out }} out
 {%         endif %}
+{%         if router_bgp.neighbors[neighbor].send_community is arista.avd.defined('all') %}
+   neighbor {{ neighbor }} send-community
+{%         elif router_bgp.neighbors[neighbor].send_community is arista.avd.defined %}
+   neighbor {{ neighbor }} send-community {{ router_bgp.neighbors[neighbor].send_community }}
+{%         endif %}
+{%         if router_bgp.neighbors[neighbor].maximum_routes is arista.avd.defined %}
+   neighbor {{ neighbor }} maximum-routes {{ router_bgp.neighbors[neighbor].maximum_routes }}
+{%         endif %}
+{%         if router_bgp.neighbors[neighbor].default_originate is arista.avd.defined %}
+{%             set neighbor_default_originate_cli = "neighbor " ~ neighbor ~ " default-originate" %}
+{%         if router_bgp.neighbors[neighbor].default_originate.route_map is arista.avd.defined %}
+{%             set neighbor_default_originate_cli = neighbor_default_originate_cli ~ " route-map " ~ router_bgp.neighbors[neighbor].default_originate.route_map %}
+{%         endif %}
+{%         if router_bgp.neighbors[neighbor].default_originate.always is arista.avd.defined(true) %}
+{%              set neighbor_default_originate_cli = neighbor_default_originate_cli ~ " always" %}
+{%         endif %}
+   {{ neighbor_default_originate_cli }}
+{%             endif %}
 {%     endfor %}
 {%     for aggregate_address in router_bgp.aggregate_addresses | arista.avd.natural_sort %}
 {%         set aggregate_address_cli = "aggregate-address " ~ aggregate_address %}
@@ -293,7 +311,7 @@ router bgp {{ router_bgp.as }}
 {%                endif %}
       {{ neighbor_default_originate_cli }}
 {%             endif%}
-{%             if underlay_rfc5549 is arista.avd.defined(true) %}
+{%             if router_bgp.address_family_ipv4.peer_groups[peer_group].next_hop.address_family_ipv6_originate is arista.avd.defined(true) %}
       neighbor {{ peer_group }} next-hop address-family ipv6 originate
 {%             endif %}
 {%             if router_bgp.address_family_ipv4.peer_groups[peer_group].activate is arista.avd.defined(true) %}
