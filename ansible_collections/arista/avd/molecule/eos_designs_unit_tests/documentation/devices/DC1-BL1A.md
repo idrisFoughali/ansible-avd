@@ -150,16 +150,16 @@ username cvpadmin privilege 15 role network-admin secret sha512 $6$rZKcbIZ7iWGAW
 
 ### TerminAttr Daemon Summary
 
-| CV Compression | Ingest gRPC URL | Ingest Authentication Key | Smash Excludes | Ingest Exclude | Ingest VRF |  NTP VRF | AAA Disabled |
-| -------------- | --------------- | ------------------------- | -------------- | -------------- | ---------- | -------- | ------ |
-| gzip | 192.168.200.11:9910 | telarista | ale,flexCounter,hardware,kni,pulse,strata | /Sysdb/cell/1/agent,/Sysdb/cell/2/agent | MGMT | MGMT | False |
+| CV Compression | CloudVision Servers | VRF | Authentication | Smash Excludes | Ingest Exclude | Bypass AAA |
+| -------------- | ------------------- | --- | -------------- | -------------- | -------------- | ---------- |
+| gzip | 192.168.200.11:9910 | MGMT | key,telarista | ale,flexCounter,hardware,kni,pulse,strata | /Sysdb/cell/1/agent,/Sysdb/cell/2/agent | False |
 
 ### TerminAttr Daemon Device Configuration
 
 ```eos
 !
 daemon TerminAttr
-   exec /usr/bin/TerminAttr -ingestgrpcurl=192.168.200.11:9910 -cvcompression=gzip -ingestauth=key,telarista -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf=MGMT -taillogs
+   exec /usr/bin/TerminAttr -cvaddr=192.168.200.11:9910 -cvauth=key,telarista -cvvrf=MGMT -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -taillogs
    no shutdown
 ```
 
@@ -169,27 +169,7 @@ daemon TerminAttr
 
 | Contact | Location | SNMP Traps |
 | ------- | -------- | ---------- |
-| example@example.com | DC1_FABRIC DC1-BL1A |  Disabled  |
-
-### SNMP ACLs
-| IP | ACL | VRF |
-| -- | --- | --- |
-
-
-### SNMP Local Interfaces
-
-| Local Interface | VRF |
-| --------------- | --- |
-
-### SNMP VRF Status
-
-| VRF | Status |
-| --- | ------ |
-
-
-
-
-
+| example@example.com | DC1_FABRIC DC1-BL1A | Disabled |
 
 ### SNMP Device Configuration
 
@@ -258,9 +238,9 @@ vlan internal order ascending range 1006 1199
 
 | VLAN ID | Name | Trunk Groups |
 | ------- | ---- | ------------ |
-| 150 | Tenant_A_WAN_Zone_1 | none  |
-| 250 | Tenant_B_WAN_Zone_1 | none  |
-| 350 | Tenant_C_WAN_Zone_1 | none  |
+| 150 | Tenant_A_WAN_Zone_1 | - |
+| 250 | Tenant_B_WAN_Zone_1 | - |
+| 350 | Tenant_C_WAN_Zone_1 | - |
 
 ## VLANs Device Configuration
 
@@ -454,13 +434,13 @@ interface Vlan350
 
 #### UDP port: 4789
 
-#### VLAN to VNI Mappings
+#### VLAN to VNI and Flood List Mappings
 
-| VLAN | VNI |
-| ---- | --- |
-| 150 | 10150 |
-| 250 | 20250 |
-| 350 | 30350 |
+| VLAN | VNI | Flood List |
+| ---- | --- | ---------- |
+| 150 | 10150 | - |
+| 250 | 20250 | - |
+| 350 | 30350 | - |
 
 #### VRF to VNI Mappings
 
@@ -477,6 +457,7 @@ interface Vlan350
 ```eos
 !
 interface Vxlan1
+   description DC1-BL1A_VTEP
    vxlan source-interface Loopback1
    vxlan udp-port 4789
    vxlan vlan 150 vni 10150
@@ -600,7 +581,6 @@ ip route vrf Tenant_A_WAN_Zone 10.3.4.0/24 1.2.3.4
 | Settings | Value |
 | -------- | ----- |
 | Address Family | ipv4 |
-| Remote AS | 65001 |
 | Send community | all |
 | Maximum routes | 12000 |
 
@@ -608,10 +588,10 @@ ip route vrf Tenant_A_WAN_Zone 10.3.4.0/24 1.2.3.4
 
 | Neighbor | Remote AS | VRF |
 | -------- | --------- | --- |
-| 172.31.255.80 | Inherited from peer group UNDERLAY-PEERS | default |
-| 172.31.255.82 | Inherited from peer group UNDERLAY-PEERS | default |
-| 172.31.255.84 | Inherited from peer group UNDERLAY-PEERS | default |
-| 172.31.255.86 | Inherited from peer group UNDERLAY-PEERS | default |
+| 172.31.255.80 | 65001 | default |
+| 172.31.255.82 | 65001 | default |
+| 172.31.255.84 | 65001 | default |
+| 172.31.255.86 | 65001 | default |
 | 192.168.255.1 | 65001 | default |
 | 192.168.255.2 | 65001 | default |
 | 192.168.255.3 | 65001 | default |
@@ -660,17 +640,20 @@ router bgp 65104
    neighbor EVPN-OVERLAY-PEERS send-community
    neighbor EVPN-OVERLAY-PEERS maximum-routes 0
    neighbor UNDERLAY-PEERS peer group
-   neighbor UNDERLAY-PEERS remote-as 65001
    neighbor UNDERLAY-PEERS password 7 AQQvKeimxJu+uGQ/yYvv9w==
    neighbor UNDERLAY-PEERS send-community
    neighbor UNDERLAY-PEERS maximum-routes 12000
    neighbor 172.31.255.80 peer group UNDERLAY-PEERS
+   neighbor 172.31.255.80 remote-as 65001
    neighbor 172.31.255.80 description DC1-SPINE1_Ethernet6
    neighbor 172.31.255.82 peer group UNDERLAY-PEERS
+   neighbor 172.31.255.82 remote-as 65001
    neighbor 172.31.255.82 description DC1-SPINE2_Ethernet6
    neighbor 172.31.255.84 peer group UNDERLAY-PEERS
+   neighbor 172.31.255.84 remote-as 65001
    neighbor 172.31.255.84 description DC1-SPINE3_Ethernet6
    neighbor 172.31.255.86 peer group UNDERLAY-PEERS
+   neighbor 172.31.255.86 remote-as 65001
    neighbor 172.31.255.86 description DC1-SPINE4_Ethernet6
    neighbor 192.168.255.1 peer group EVPN-OVERLAY-PEERS
    neighbor 192.168.255.1 remote-as 65001

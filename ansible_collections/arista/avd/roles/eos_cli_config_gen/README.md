@@ -20,6 +20,7 @@
       - [AAA Root](#aaa-root)
       - [AAA Server Groups](#aaa-server-groups)
       - [Enable Password](#enable-password)
+      - [IP RADIUS Source Interfaces](#ip-radius-source-interfaces)
       - [IP TACACS+ Source Interfaces](#ip-tacacs-source-interfaces)
       - [Local Users](#local-users)
       - [Radius Servers](#radius-servers)
@@ -37,6 +38,7 @@
       - [IP Extended Community Lists RegExp](#ip-extended-community-lists-regexp)
       - [Peer Filters](#peer-filters)
       - [Route Maps](#route-maps)
+      - [Match Lists](#match-lists)
     - [Generate Device Documentation](#generate-device-documentation)
     - [Generate Default Config](#generate-default-config)
     - [Hardware](#hardware)
@@ -61,6 +63,10 @@
     - [IP ICMP Redirect](#ip-icmp-redirect)
     - [LLDP](#lldp)
     - [MACsec](#macsec)
+    - [Maintenance Mode](#maintenance-mode)
+      - [BGP Groups](#bgp-groups)
+      - [Interface Groups](#interface-groups)
+      - [Profiles and units](#profiles-and-units)
     - [Management](#management)
       - [Clock Timezone](#clock-timezone)
       - [DNS Domain](#dns-domain)
@@ -69,6 +75,7 @@
       - [Domain-List](#domain-list)
       - [Management Interfaces](#management-interfaces)
       - [Management HTTP](#management-http)
+      - [IP HTTP Client Source Interfaces](#ip-http-client-source-interfaces)
       - [Management GNMI](#management-gnmi)
       - [Management Console](#management-console)
       - [Management Security](#management-security)
@@ -90,6 +97,7 @@
       - [Logging](#logging)
       - [Sflow](#sflow)
       - [SNMP Settings](#snmp-settings)
+    - [System Control-Plane](#system-control-plane)
       - [VM Tracer Sessions](#vm-tracer-sessions)
     - [PTP](#ptp)
     - [Prompt](#prompt)
@@ -247,7 +255,7 @@ aliases: |
 aaa_authentication:
   login:
     default: < group group_name | local | none > < group group_name | local | none >
-    serial_console: < group group_name | local | none > < group group_name | local | none >
+    console: < group group_name | local | none > < group group_name | local | none >
   enable:
     default: < group group_name | local | none > < group group_name | local | none >
   dot1x:
@@ -323,6 +331,16 @@ enable_password:
   key: "< hashed_password >"
 ```
 
+#### IP RADIUS Source Interfaces
+
+```yaml
+ip_radius_source_interfaces:
+    - name: <interface_name_1 >
+      vrf: < vrf_name_1 >
+    - name: <interface_name_2 >
+      vrf: < vrf_name_2 >
+```
+
 #### IP TACACS+ Source Interfaces
 
 ```yaml
@@ -341,11 +359,13 @@ local_users:
     role: < role >
     sha512_password: "< sha_512_password >"
     no_password: < true | do not configure a password for given username. sha512_password MUST not be defined for this user. >
+    ssh_key: "< ssh_key_string >"
   < user_2 >:
     privilege: < 1-15 >
     role: < role >
     sha512_password: "< sha_512_password >"
     no_password: < true | do not configure a password for given username. sha512_password MUST not be defined for this user. >
+    ssh_key: "< ssh_key_string >"
 ```
 
 #### Radius Servers
@@ -365,6 +385,7 @@ tacacs_servers:
     - host: < host1_ip_address >
       vrf: < vrf_name >
       key: < encypted_key >
+      single_connection: < true | false >
     - host: < host2_ip_address >
       key: < encypted_key >
       timeout: < timeout in seconds >
@@ -551,6 +572,17 @@ route_maps:
           - "< set rule 2 as string >"
 ```
 
+#### Match Lists
+
+```yaml
+match_list_input:
+  string:
+    < match_list_1 >:
+      sequence_numbers:
+        < sequence_id 1 >:
+          match_regex: < match string >
+```
+
 ### Generate Device Documentation
 
 ```yaml
@@ -713,6 +745,9 @@ ethernet_interfaces:
     lacp_timer:
       mode: < fast | normal >
       multiplier: < 3 - 3000 >
+    transceiver:
+      media:
+        override: < transceiver_type >
     # EOS CLI rendered directly on the ethernet interface in the final EOS configuration
     eos_cli: |
       < multiline eos cli >
@@ -722,6 +757,7 @@ ethernet_interfaces:
 
 ```yaml
 # Switched Interfaces
+ethernet_interfaces:
   <Ethernet_interface_2 >:
     description: < description >
     shutdown: < true | false >
@@ -785,6 +821,12 @@ ethernet_interfaces:
     lacp_timer:
       mode: < fast | normal >
       multiplier: < 3 - 3000 >
+    trunk_private_vlan_secondary: < true | false >
+    pvlan_mapping: "< list of vlans as string >"
+    vlan_translations:
+      - from: < list of vlans as string (only one vlan if direction is "both") >
+        to: < vlan_id >
+        direction: < in | out | both | default -> both >
     # EOS CLI rendered directly on the ethernet interface in the final EOS configuration
     eos_cli: |
       < multiline eos cli >
@@ -857,6 +899,7 @@ port_channel_interfaces:
     type: < routed | switched | l3dot1q >
     encapsulation_dot1q_vlan: < vlan tag to configure on sub-interface >
     mode: < access | dot1q-tunnel | trunk | "trunk phone" >
+    native_vlan: < native vlan number >
     phone:
       trunk: < tagged | untagged >
       vlan: < 1-4094 >
@@ -877,6 +920,25 @@ port_channel_interfaces:
       interval: < rate in milliseconds >
       min_rx: < rate in milliseconds >
       multiplier: < 3-50 >
+    trunk_private_vlan_secondary: < true | false >
+    pvlan_mapping: "< list of vlans as string >"
+    vlan_translations:
+      - from: < list of vlans as string (only one vlan if direction is "both") >
+        to: < vlan_id >
+        direction: < in | out | both | default -> both >
+    storm_control:
+      all:
+        level: < Configure maximum storm-control level >
+        unit: < percent* | pps (optional and is hardware dependant - default is percent)>
+      broadcast:
+        level: < Configure maximum storm-control level >
+        unit: < percent* | pps (optional and is hardware dependant - default is percent)>
+      multicast:
+        level: < Configure maximum storm-control level >
+        unit: < percent* | pps (optional and is hardware dependant - default is percent) >
+      unknown_unicast:
+        level: < Configure maximum storm-control level >
+        unit: < percent* | pps (optional and is hardware dependant - default is percent)>
     # EOS CLI rendered directly on the port-channel interface in the final EOS configuration
     eos_cli: |
       < multiline eos cli >
@@ -1019,6 +1081,7 @@ vlan_interfaces:
     service_policy:
       pbr:
         input: < policy-map name >
+    pvlan_mapping: "< list of vlans as string >"
     # EOS CLI rendered directly on the VLAN interface in the final EOS configuration
     eos_cli: |
       < multiline eos cli >
@@ -1030,24 +1093,36 @@ vlan_interfaces:
 #### VxLAN Interface
 
 ```yaml
-vxlan_tunnel_interface:
+vxlan_interface:
   Vxlan1:
     description: < description >
-    source_interface: < source_interface_name >
-    virtual_router:
-      encapsulation_mac_address: < mlag-system-id | ethernet_address (H.H.H) >
-    vxlan_udp_port: < udp_port >
-    vxlan_vni_mappings:
+    vxlan:
+      source_interface: < source_interface_name >
+      udp_port: < udp_port >
+      virtual_router_encapsulation_mac_address: < mlag-system-id | ethernet_address (H.H.H) >
       vlans:
         < vlan_id_1 >:
           vni: < vni_id_1 >
+          flood_vteps:
+            - < remote_vtep_1_ip_address >
+            - < remote_vtep_2_ip_address >
         < vlan_id_2 >:
           vni: < vni_id_2 >
+          flood_vteps:
+            - < remote_vtep_1_ip_address >
+            - < remote_vtep_2_ip_address >
       vrfs:
-        < vrf_name >:
+        < vrf_name_1 >:
           vni: < vni_id_3 >
-        < vrf_name >:
+        < vrf_name_2 >:
           vni: < vni_id_4 >
+      flood_vteps:
+        - < remote_vtep_1_ip_address >
+        - < remote_vtep_2_ip_address >
+      flood_vtep_learned_data_plane: < true | false >
+    # EOS CLI rendered directly on the Vxlan interface in the final EOS configuration
+    eos_cli: |
+      < multiline eos cli >
 ```
 
 ### Internal VLAN Allocation Policy
@@ -1101,6 +1176,68 @@ mac_security:
         "< connection_key >":
           encrypted_key: "< encrypted_key >"
           fallback: < true | false -> default >
+```
+
+### Maintenance Mode
+
+#### BGP Groups
+
+```yaml
+bgp_groups:
+  < group_name >:
+    vrf: "< vrf_name >"
+    neighbors:
+      - "< ip_address >"
+      - "< ipv6_address >"
+      - "< peer_group_name >"
+    bgp_maintenance_profiles:
+      - < profile_name >
+```
+
+#### Interface Groups
+
+```yaml
+interface_groups:
+  < group_name >:
+    interfaces:
+      - "< interface_or_interface_range >"
+    bgp_maintenance_profiles:
+      - "< profile_name >"
+    interface_maintenance_profiles:
+      - "< profile_name >"
+```
+
+#### Profiles and units
+```yaml
+maintenance:
+  default_interface_profile: < interface_profile_1 >
+  default_bgp_profile: < bgp_profile_1 >
+  default_unit_profile: < unit_profile_1 >
+  interface_profiles:
+    < interface_profile_1 >:
+      rate_monitoring:
+        load_interval: < seconds >
+        threshold: < kbps >
+      shutdown:
+        max_delay: < seconds >
+  bgp_profiles:
+    < bgp_profile_1 >:
+      initiator:
+        route_map_inout: < route_map >
+  unit_profiles:
+    < unit_profile_1 >:
+      on_boot:
+        duration: < 300-3600 >
+  units:
+    < unit_name_1 >:
+      quiesce: < true | false >
+      profile: < unit_profile_1 >
+      bgp_groups:
+        - < bgp_group_1>
+        - < bgp_group_2>
+      interface_groups:
+        - < interface_group_1>
+        - < interface_group_2>
 ```
 
 ### Management
@@ -1175,6 +1312,16 @@ management_api_http:
       access_group: < Standard IPv4 ACL name >
       ipv6_access_group: < Standard IPv6 ACL name >
     < vrf_name_2 >:
+```
+
+#### IP HTTP Client Source Interfaces
+
+```yaml
+ip_http_client_source_interfaces:
+    - name: <interface_name_1>
+      vrf: <vrf_name_1>
+    - name: <interface_name_2>
+      vrf: <vrf_name_2>
 ```
 
 #### Management GNMI
@@ -1288,6 +1435,7 @@ mpls:
 ```yaml
 mlag_configuration:
   domain_id: < domain_id_name >
+  heartbeat_interval: < milliseconds >
   local_interface: < interface_name >
   peer_address: < IPv4_address >
   peer_address_heartbeat:
@@ -1346,20 +1494,80 @@ router_pim_sparse_mode:
 
 ```yaml
 daemon_terminattr:
-  ingestgrpcurl:
-    ips:
-      - < IPv4_address >
-      - < IPv4_address >
-      - < IPv4_address >
-    port: < port_id >
-  ingestauth_key: < ingest_key >
-  ingestvrf: < vrf_name >
-  smashexcludes: "< list as string >"
-  ingestexclude: "< list as string >"
-  disable_aaa: < false | true >
+  # Address of the gRPC server on CloudVision
+  # TCP 9910 is used on on-prem
+  # TCP 443 is used on CV as a Service
+  cvaddrs: # For single cluster
+    - < ip/fqdn >:<port>
+    - < ip/fqdn >:<port>
+    - < ip/fqdn >:<port>
+  clusters: # For multiple cluster support
+    < cluster_name >:
+      cvaddrs:
+        - < ip/fqdn >:<port>
+        - < ip/fqdn >:<port>
+        - < ip/fqdn >:<port>
+      cvauth:
+        method: < "token" | "token-secure" | "key" >
+        key: < key >
+        token_file: < path | e.g. "/tmp/token" >
+      cvobscurekeyfile: < true | false >
+      cvproxy: < URL >
+      cvsourceip: < IP Address >
+      cvvrf: < vrf >
+  # Authentication scheme used to connect to CloudVision
+  cvauth:
+    method: < "token" | "token-secure" | "key" >
+    key: < key >
+    token_file: < path | e.g. "/tmp/token" >
+  # Compression scheme when streaming to CloudVision. The default is gzip since TerminAttr 1.6.1 and CVP 2019.1.0.
+  # This flag does not have to be set to take effect.
+  cvcompression: < gzip | none >
+  # Encrypt the private key used for authentication to CloudVision
+  cvobscurekeyfile: < true | false >
+  # Proxy server through which CloudVision is reachable. Useful when the CloudVision server is hosted in the cloud.
+  # The expected form is http://[user:password@]ip:port, e.g.: 'http://arista:arista@10.83.12.78:3128'
+  # Available as of TerminAttr v1.13.0
+  cvproxy: < URL >
+  # set source IP address in case of in-band managament
+  cvsourceip: < IP Address >
+  # Name of the VRF to use to connect to CloudVision
+  cvvrf: < vrf >
+  # Stream states from EOS GNMI servers (Openconfig) to CloudVision
+  # Available as of TerminAttr v1.13.1
+  cvgnmi: < true | false >
+  # Disable AAA authorization and accounting. When setting this flag, all commands pushed
+  # from CloudVision are applied directly to the CLI without authorization
+  disable_aaa: < true | false >
+  # Set the gRPC server address, the default is 127.0.0.1:6042
+  grpcaddr: < string | e.g. "MGMT/0.0.0.0:6042" >
+  # gNMI read-only mode – Disable gnmi.Set()
+  grpcreadonly: < true | false >
+  # Exclude paths from Sysdb on the ingest side
+  ingestexclude: < string | e.g. "/Sysdb/cell/1/agent,/Sysdb/cell/2/agent" >
+  # Exclude paths from the shared memory table
+  smashexcludes: < string | e.g. "ale,flexCounter,hardware,kni,pulse,strata" >
+  # Enable log file collection; /var/log/messages is streamed by default if no path is set.
+  taillogs: < path | e.g. "/var/log/messages" >
+  # ECO DHCP Collector address or ECO DHCP Fingerprint listening addressin standalone mode (default “127.0.0.1:67”)
+  ecodhcpaddr: < IPV4_address:port >
+  # Enable IPFIX provider (default true)
+  # This flag is enabled by default and does not have to be added to the daemon configuration.
+  ipfix: < true | false >
+  # ECO IPFIX Collector address to listen on to receive IPFIX packets (default “127.0.0.1:4739”)
+  # This flag is enabled by default and does not have to be added to the daemon configuration
+  ipfixaddr: < IPV4_address:port >
+  # Enable sFlow provider (default true)
+  # This flag is enabled by default and does not have to be added to the daemon configuration
+  sflow: < true | false >
+  # ECO sFlow Collector address to listen on to receive sFlow packets (default “127.0.0.1:6343”)
+  # This flag is enabled by default and does not have to be added to the daemon configuration
+  sflowaddr: < IPV4_address:port >
 ```
 
-You can either provide a list of IPs to target on-premise Cloudvision cluster or either use DNS name for your Cloudvision as a Service instance. If you have both on-prem and CVaaS defined, only on-prem is going to be configured.
+You can either provide a list of IPs/FQDNs to target on-premise Cloudvision cluster or use DNS name for your Cloudvision as a Service instance. Streaming to multiple clusters both on-prem and cloud service is supported.
+
+> Note For TerminAttr version recommendation and EOS compatibility matrix, please refer to the latest TerminAttr Release Notes which always contain the latest recommended versions and minimum required versions per EOS release.
 
 #### Custom Daemons
 
@@ -1411,6 +1619,8 @@ logging:
     size: < messages_nb (minimum of 10) >
     level: < severity_level >
   trap: < severity_level >
+  synchronous:
+    level: < severity_level | default --> critical >
   format:
     timestamp: < high-resolution | traditional >
     hostname: < fqdn | ipv4 >
@@ -1422,6 +1632,11 @@ logging:
       hosts:
         - < syslog_server_1>
         - < syslog_server_2>
+  policy:
+    match:
+      match_lists:
+        < match_list >:
+          action: < discard >
 ```
 
 #### Sflow
@@ -1515,16 +1730,17 @@ snmp_server:
   hosts:
     - host: < host IP address or name >
       vrf: < vrf_name >
+      version: < 1 | 2c | 3 >
+      community: < community_name >
       users:
         - username: < username >
           authentication_level: < auth | noauth | priv >
-          version: < 1 | 2c | 3 >
     - host: < host IP address or name >
       vrf: < vrf_name >
+      community: < community_name >
       users:
         - username: < username >
           authentication_level: < auth | noauth | priv >
-          version: < 1 | 2c | 3 >
   traps:
     enable: < true | false >
   vrfs:
@@ -1532,6 +1748,21 @@ snmp_server:
       enable: < true | false >
     - name: < vrf_name >
       enable: < true | false >
+```
+
+###  System Control-Plane
+```yaml
+system:
+  control_plane:
+    tcp_mss:
+      ipv4: < Segment size >
+      ipv6: < Segment size >
+    ipv4_access_groups:
+      - acl_name: < access-list name >
+        vrf: < Optional vrf field >
+    ipv6_access_groups:
+      - acl_name: < access-list name >
+        vrf: < Optional vrf field >
 ```
 
 #### VM Tracer Sessions
@@ -1671,7 +1902,7 @@ qos_profiles:
 ```yaml
 queue_monitor_length:
   log: < seconds >
-  notifying: < true | false >
+  notifying: < true | false - should only be used for platforms supporting the "queue-monitor length notifying" CLI >
 ```
 
 #### Queue Monitor Streaming
@@ -1893,6 +2124,8 @@ router_bgp:
         default_originate:
           always: < true | false >
           route_map: < route_map_name >
+        next_hop:
+          address_family_ipv6_originate: < true | false >
     neighbors:
       < neighbor_ip_address>:
         route_map_in: < route_map_name >
@@ -2059,6 +2292,17 @@ router_ospf:
         - < interface_1 >
         - < interface_2 >
       max_lsa: < integer >
+      timers:
+        lsa:
+          rx_min_interval: < 0-600000 - Min interval in msecs between accepting the same LSA >
+          tx_delay:
+            initial: < 0-600000 - Delay to generate first occurrence of LSA in msecs >
+            min: < 1-600000 Min delay between originating the same LSA in msecs >
+            max: < 1-600000 Maximum delay between originating the same LSA in msecs >
+        spf_delay:
+          initial: < 0-600000 - Initial SPF schedule delay in msecs >
+          min: < 0-65535000  Min Hold time between two SPFs in msecs >
+          max: < 0-65535000  Max wait time between two SPFs in msecs >
       default_information_originate:
         always: true
       summary_addresses:
@@ -2075,7 +2319,23 @@ router_ospf:
           route_map: < route_map_name >
         connected:
           route_map: < route_map_name >
+        bgp:
+          route_map: < route_map_name >
       auto_cost_reference_bandwidth: < bandwidth in mbps >
+      areas:
+        < area >:
+          filter:
+            networks:
+              - < IPv4 subnet / netmask >
+              - < IPv4 subnet / netmask >
+            prefix_list: < prefix list name >
+        < area >:
+          type: < normal | stub | nssa | default -> normal >
+          no_summary: < true | false >
+          nssa_only: < true | false >
+          default_information_originate:
+            metric: < Integer 1-65535 > # Value of the route metric
+            metric_type: < 1 | 2 > # OSPF metric type
       maximum_paths: < Integer 1-32 >
       max_metric:
         router_lsa:
@@ -2321,6 +2581,9 @@ vlans:
     trunk_groups:
       - < trunk_group_name_1 >
       - < trunk_group_name_2 >
+    private_vlan:
+      type: < community | isolated >
+      primary_vlan: < vlan_id >
   < vlan_id >:
     name: < vlan_name >
 ```

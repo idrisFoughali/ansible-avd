@@ -148,16 +148,16 @@ username cvpadmin privilege 15 role network-admin secret sha512 $6$rZKcbIZ7iWGAW
 
 ### TerminAttr Daemon Summary
 
-| CV Compression | Ingest gRPC URL | Ingest Authentication Key | Smash Excludes | Ingest Exclude | Ingest VRF |  NTP VRF | AAA Disabled |
-| -------------- | --------------- | ------------------------- | -------------- | -------------- | ---------- | -------- | ------ |
-| gzip | 192.168.200.11:9910 | telarista | ale,flexCounter,hardware,kni,pulse,strata | /Sysdb/cell/1/agent,/Sysdb/cell/2/agent | MGMT | MGMT | False |
+| CV Compression | CloudVision Servers | VRF | Authentication | Smash Excludes | Ingest Exclude | Bypass AAA |
+| -------------- | ------------------- | --- | -------------- | -------------- | -------------- | ---------- |
+| gzip | 192.168.200.11:9910 | MGMT | key,telarista | ale,flexCounter,hardware,kni,pulse,strata | /Sysdb/cell/1/agent,/Sysdb/cell/2/agent | False |
 
 ### TerminAttr Daemon Device Configuration
 
 ```eos
 !
 daemon TerminAttr
-   exec /usr/bin/TerminAttr -ingestgrpcurl=192.168.200.11:9910 -cvcompression=gzip -ingestauth=key,telarista -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf=MGMT -taillogs
+   exec /usr/bin/TerminAttr -cvaddr=192.168.200.11:9910 -cvauth=key,telarista -cvvrf=MGMT -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -taillogs
    no shutdown
 ```
 
@@ -167,27 +167,7 @@ daemon TerminAttr
 
 | Contact | Location | SNMP Traps |
 | ------- | -------- | ---------- |
-| example@example.com | DC1_FABRIC DC1-BL1B |  Disabled  |
-
-### SNMP ACLs
-| IP | ACL | VRF |
-| -- | --- | --- |
-
-
-### SNMP Local Interfaces
-
-| Local Interface | VRF |
-| --------------- | --- |
-
-### SNMP VRF Status
-
-| VRF | Status |
-| --- | ------ |
-
-
-
-
-
+| example@example.com | DC1_FABRIC DC1-BL1B | Disabled |
 
 ### SNMP Device Configuration
 
@@ -256,9 +236,9 @@ vlan internal order ascending range 1006 1199
 
 | VLAN ID | Name | Trunk Groups |
 | ------- | ---- | ------------ |
-| 150 | Tenant_A_WAN_Zone_1 | none  |
-| 250 | Tenant_B_WAN_Zone_1 | none  |
-| 350 | Tenant_C_WAN_Zone_1 | none  |
+| 150 | Tenant_A_WAN_Zone_1 | - |
+| 250 | Tenant_B_WAN_Zone_1 | - |
+| 350 | Tenant_C_WAN_Zone_1 | - |
 
 ## VLANs Device Configuration
 
@@ -474,13 +454,13 @@ interface Vlan350
 
 #### UDP port: 4789
 
-#### VLAN to VNI Mappings
+#### VLAN to VNI and Flood List Mappings
 
-| VLAN | VNI |
-| ---- | --- |
-| 150 | 10150 |
-| 250 | 20250 |
-| 350 | 30350 |
+| VLAN | VNI | Flood List |
+| ---- | --- | ---------- |
+| 150 | 10150 | - |
+| 250 | 20250 | - |
+| 350 | 30350 | - |
 
 #### VRF to VNI Mappings
 
@@ -497,6 +477,7 @@ interface Vlan350
 ```eos
 !
 interface Vxlan1
+   description DC1-BL1B_VTEP
    vxlan source-interface Loopback1
    vxlan udp-port 4789
    vxlan vlan 150 vni 10150
@@ -579,6 +560,9 @@ ip routing vrf Tenant_L3_VRF_Zone
 | --- | ------------------ | ----------------------- | ------------------- | ----------------------------- | ----------------- | ----------------------------- | -------------- |
 | MGMT  | 0.0.0.0/0 |  192.168.200.5  |  -  |  1  |  -  |  -  |  - |
 | Tenant_A_WAN_Zone  | 10.3.4.0/24 |  1.2.3.4  |  -  |  1  |  -  |  -  |  - |
+| Tenant_A_WAN_Zone  | 1.1.1.0/24 |  10.1.1.1  |  vlan101  |  1  |  -  |  -  |  - |
+| Tenant_A_WAN_Zone  | 1.1.2.0/24 |  10.1.1.1  |  vlan101  |  200  |  666  |  RT-TO-FAKE-DMZ  |  - |
+| Tenant_A_WAN_Zone  | 10.3.5.0/24 |  -  |  Null0  |  1  |  -  |  -  |  - |
 
 ### Static Routes Device Configuration
 
@@ -586,6 +570,9 @@ ip routing vrf Tenant_L3_VRF_Zone
 !
 ip route vrf MGMT 0.0.0.0/0 192.168.200.5
 ip route vrf Tenant_A_WAN_Zone 10.3.4.0/24 1.2.3.4
+ip route vrf Tenant_A_WAN_Zone 1.1.1.0/24 Vlan101 10.1.1.1
+ip route vrf Tenant_A_WAN_Zone 1.1.2.0/24 Vlan101 10.1.1.1 200 tag 666 name RT-TO-FAKE-DMZ
+ip route vrf Tenant_A_WAN_Zone 10.3.5.0/24 Null0
 ```
 
 ## Router BGP
@@ -620,7 +607,6 @@ ip route vrf Tenant_A_WAN_Zone 10.3.4.0/24 1.2.3.4
 | Settings | Value |
 | -------- | ----- |
 | Address Family | ipv4 |
-| Remote AS | 65001 |
 | Send community | all |
 | Maximum routes | 12000 |
 
@@ -628,10 +614,10 @@ ip route vrf Tenant_A_WAN_Zone 10.3.4.0/24 1.2.3.4
 
 | Neighbor | Remote AS | VRF |
 | -------- | --------- | --- |
-| 172.31.255.96 | Inherited from peer group UNDERLAY-PEERS | default |
-| 172.31.255.98 | Inherited from peer group UNDERLAY-PEERS | default |
-| 172.31.255.100 | Inherited from peer group UNDERLAY-PEERS | default |
-| 172.31.255.102 | Inherited from peer group UNDERLAY-PEERS | default |
+| 172.31.255.96 | 65001 | default |
+| 172.31.255.98 | 65001 | default |
+| 172.31.255.100 | 65001 | default |
+| 172.31.255.102 | 65001 | default |
 | 192.168.255.1 | 65001 | default |
 | 192.168.255.2 | 65001 | default |
 | 192.168.255.3 | 65001 | default |
@@ -657,7 +643,7 @@ ip route vrf Tenant_A_WAN_Zone 10.3.4.0/24 1.2.3.4
 | ----------------- | ------------------- | ----------------- | ------------------- | ------------------- | ------------ | ----- |
 | Tenant_A_WAN_Zone | 192.168.255.15:14 | 14:14 | - | - | learned | 150 |
 | Tenant_B_WAN_Zone | 192.168.255.15:21 | 21:21 | - | - | learned | 250 |
-| Tenant_C_WAN_Zone | 192.168.255.15:31 | 31:31 | - | - | learned | 350 |
+| Tenant_C_WAN_Zone | 192.168.255.15:30031 | 30031:30031 | - | - | learned | 350 |
 
 #### Router BGP EVPN VRFs
 
@@ -686,17 +672,20 @@ router bgp 65105
    neighbor EVPN-OVERLAY-PEERS send-community
    neighbor EVPN-OVERLAY-PEERS maximum-routes 0
    neighbor UNDERLAY-PEERS peer group
-   neighbor UNDERLAY-PEERS remote-as 65001
    neighbor UNDERLAY-PEERS password 7 AQQvKeimxJu+uGQ/yYvv9w==
    neighbor UNDERLAY-PEERS send-community
    neighbor UNDERLAY-PEERS maximum-routes 12000
    neighbor 172.31.255.96 peer group UNDERLAY-PEERS
+   neighbor 172.31.255.96 remote-as 65001
    neighbor 172.31.255.96 description DC1-SPINE1_Ethernet7
    neighbor 172.31.255.98 peer group UNDERLAY-PEERS
+   neighbor 172.31.255.98 remote-as 65001
    neighbor 172.31.255.98 description DC1-SPINE2_Ethernet7
    neighbor 172.31.255.100 peer group UNDERLAY-PEERS
+   neighbor 172.31.255.100 remote-as 65001
    neighbor 172.31.255.100 description DC1-SPINE3_Ethernet7
    neighbor 172.31.255.102 peer group UNDERLAY-PEERS
+   neighbor 172.31.255.102 remote-as 65001
    neighbor 172.31.255.102 description DC1-SPINE4_Ethernet7
    neighbor 192.168.255.1 peer group EVPN-OVERLAY-PEERS
    neighbor 192.168.255.1 remote-as 65001
@@ -725,8 +714,8 @@ router bgp 65105
       vlan 250
    !
    vlan-aware-bundle Tenant_C_WAN_Zone
-      rd 192.168.255.15:31
-      route-target both 31:31
+      rd 192.168.255.15:30031
+      route-target both 30031:30031
       redistribute learned
       vlan 350
    !

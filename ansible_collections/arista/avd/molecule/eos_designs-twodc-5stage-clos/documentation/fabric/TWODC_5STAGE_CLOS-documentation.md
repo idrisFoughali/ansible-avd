@@ -9,9 +9,9 @@
 - [Fabric IP Allocation](#fabric-ip-allocation)
   - [Fabric Point-To-Point Links](#fabric-point-to-point-links)
   - [Point-To-Point Links Node Allocation](#point-to-point-links-node-allocation)
-  - [Overlay Loopback Interfaces (BGP EVPN Peering)](#overlay-loopback-interfaces-bgp-evpn-peering)
+  - [Loopback Interfaces (BGP EVPN Peering)](#loopback-interfaces-bgp-evpn-peering)
   - [Loopback0 Interfaces Node Allocation](#loopback0-interfaces-node-allocation)
-  - [VTEP Loopback VXLAN Tunnel Source Interfaces (Leafs Only)](#vtep-loopback-vxlan-tunnel-source-interfaces-leafs-only)
+  - [VTEP Loopback VXLAN Tunnel Source Interfaces (VTEPs Only)](#vtep-loopback-vxlan-tunnel-source-interfaces-vteps-only)
   - [VTEP Loopback Node allocation](#vtep-loopback-node-allocation)
 
 <!-- toc -->
@@ -72,9 +72,13 @@
 | l3leaf | DC1-POD1-LEAF2A | Ethernet5 | mlag_peer | DC1-POD1-LEAF2B | Ethernet5 |
 | l3leaf | DC1-POD1-LEAF2A | Ethernet6 | mlag_peer | DC1-POD1-LEAF2B | Ethernet6 |
 | l3leaf | DC1-POD1-LEAF2A | Ethernet7 | l3leaf | DC2-POD1-LEAF1A | Ethernet6 |
+| l3leaf | DC1-POD1-LEAF2A | Ethernet11 | spine | DC1-POD1-SPINE1 | Ethernet7 |
+| l3leaf | DC1-POD1-LEAF2A | Ethernet12 | spine | DC1-POD1-SPINE2 | Ethernet7 |
 | l3leaf | DC1-POD1-LEAF2B | Ethernet1 | spine | DC1-POD1-SPINE1 | Ethernet5 |
 | l3leaf | DC1-POD1-LEAF2B | Ethernet2 | spine | DC1-POD1-SPINE2 | Ethernet5 |
 | l3leaf | DC1-POD1-LEAF2B | Ethernet7 | l3leaf | DC2-POD1-LEAF1A | Ethernet7 |
+| l3leaf | DC1-POD1-LEAF2B | Ethernet11 | spine | DC1-POD1-SPINE1 | Ethernet8 |
+| l3leaf | DC1-POD1-LEAF2B | Ethernet12 | spine | DC1-POD1-SPINE2 | Ethernet8 |
 | spine | DC1-POD1-SPINE1 | Ethernet1 | super-spine | DC1-SUPER-SPINE1 | Ethernet1 |
 | spine | DC1-POD1-SPINE1 | Ethernet2 | super-spine | DC1-SUPER-SPINE2 | Ethernet1 |
 | spine | DC1-POD1-SPINE1 | Ethernet6 | overlay-controller | DC1-RS1 | Ethernet2 |
@@ -110,14 +114,14 @@
 
 ## Fabric Point-To-Point Links
 
-| P2P Summary | Available Addresses | Assigned addresses | Assigned Address % |
-| ----------- | ------------------- | ------------------ | ------------------ |
+| Uplink IPv4 Pool | Available Addresses | Assigned addresses | Assigned Address % |
+| ---------------- | ------------------- | ------------------ | ------------------ |
 | 172.16.11.0/24 | 256 | 8 | 3.13 % |
 | 172.16.12.0/24 | 256 | 8 | 3.13 % |
 | 172.16.21.0/24 | 256 | 8 | 3.13 % |
 | 172.17.10.0/24 | 256 | 12 | 4.69 % |
 | 172.17.20.0/24 | 256 | 8 | 3.13 % |
-| 172.17.110.0/24 | 256 | 12 | 4.69 % |
+| 172.17.110.0/24 | 256 | 20 | 7.82 % |
 | 172.17.120.0/24 | 256 | 4 | 1.57 % |
 | 172.17.210.0/24 | 256 | 4 | 1.57 % |
 
@@ -128,12 +132,16 @@
 | DC1-POD1-LEAF1A | Ethernet1 | 172.17.110.1/31 | DC1-POD1-SPINE1 | Ethernet3 | 172.17.110.0/31 |
 | DC1-POD1-LEAF1A | Ethernet2 | 172.17.110.3/31 | DC1-POD1-SPINE2 | Ethernet3 | 172.17.110.2/31 |
 | DC1-POD1-LEAF1A | Ethernet4 | 172.17.10.4/31 | DC1-RS1 | Ethernet3 | 172.17.10.5/31 |
-| DC1-POD1-LEAF2A | Ethernet1 | 172.17.110.5/31 | DC1-POD1-SPINE1 | Ethernet4 | 172.17.110.4/31 |
-| DC1-POD1-LEAF2A | Ethernet2 | 172.17.110.7/31 | DC1-POD1-SPINE2 | Ethernet4 | 172.17.110.6/31 |
+| DC1-POD1-LEAF2A | Ethernet1 | 172.17.110.9/31 | DC1-POD1-SPINE1 | Ethernet4 | 172.17.110.8/31 |
+| DC1-POD1-LEAF2A | Ethernet2 | 172.17.110.11/31 | DC1-POD1-SPINE2 | Ethernet4 | 172.17.110.10/31 |
 | DC1-POD1-LEAF2A | Ethernet7 | 100.100.100.101/24 | DC2-POD1-LEAF1A | Ethernet6 | 100.100.100.201/24 |
-| DC1-POD1-LEAF2B | Ethernet1 | 172.17.110.9/31 | DC1-POD1-SPINE1 | Ethernet5 | 172.17.110.8/31 |
-| DC1-POD1-LEAF2B | Ethernet2 | 172.17.110.11/31 | DC1-POD1-SPINE2 | Ethernet5 | 172.17.110.10/31 |
+| DC1-POD1-LEAF2A | Ethernet11 | 172.17.110.13/31 | DC1-POD1-SPINE1 | Ethernet7 | 172.17.110.12/31 |
+| DC1-POD1-LEAF2A | Ethernet12 | 172.17.110.15/31 | DC1-POD1-SPINE2 | Ethernet7 | 172.17.110.14/31 |
+| DC1-POD1-LEAF2B | Ethernet1 | 172.17.110.17/31 | DC1-POD1-SPINE1 | Ethernet5 | 172.17.110.16/31 |
+| DC1-POD1-LEAF2B | Ethernet2 | 172.17.110.19/31 | DC1-POD1-SPINE2 | Ethernet5 | 172.17.110.18/31 |
 | DC1-POD1-LEAF2B | Ethernet7 | 11.1.0.38/31 | DC2-POD1-LEAF1A | Ethernet7 | 11.1.0.39/31 |
+| DC1-POD1-LEAF2B | Ethernet11 | 172.17.110.21/31 | DC1-POD1-SPINE1 | Ethernet8 | 172.17.110.20/31 |
+| DC1-POD1-LEAF2B | Ethernet12 | 172.17.110.23/31 | DC1-POD1-SPINE2 | Ethernet8 | 172.17.110.22/31 |
 | DC1-POD1-SPINE1 | Ethernet1 | 172.16.11.1/31 | DC1-SUPER-SPINE1 | Ethernet1 | 172.16.11.0/31 |
 | DC1-POD1-SPINE1 | Ethernet2 | 172.16.11.65/31 | DC1-SUPER-SPINE2 | Ethernet1 | 172.16.11.64/31 |
 | DC1-POD1-SPINE1 | Ethernet6 | 172.17.10.2/31 | DC1-RS1 | Ethernet2 | 172.17.10.3/31 |
@@ -164,10 +172,10 @@
 | DC2-RS2 | Ethernet1 | 172.17.20.9/31 | DC2-SUPER-SPINE1 | Ethernet5 | 172.17.20.8/31 |
 | DC2-RS2 | Ethernet2 | 172.17.20.11/31 | DC2-SUPER-SPINE1 | Ethernet7 | 172.17.20.10/31 |
 
-## Overlay Loopback Interfaces (BGP EVPN Peering)
+## Loopback Interfaces (BGP EVPN Peering)
 
-| Overlay Loopback Summary | Available Addresses | Assigned addresses | Assigned Address % |
-| ------------------------ | ------------------- | ------------------ | ------------------ |
+| Loopback Pool | Available Addresses | Assigned addresses | Assigned Address % |
+| ------------- | ------------------- | ------------------ | ------------------ |
 | 172.16.10.0/24 | 256 | 2 | 0.79 % |
 | 172.16.20.0/24 | 256 | 2 | 0.79 % |
 | 172.16.100.0/24 | 256 | 2 | 0.79 % |
@@ -200,9 +208,9 @@
 | DC2 | DC2-SUPER-SPINE1 | 172.16.200.1/32 |
 | DC2 | DC2-SUPER-SPINE2 | 172.16.200.2/32 |
 
-## VTEP Loopback VXLAN Tunnel Source Interfaces (Leafs Only)
+## VTEP Loopback VXLAN Tunnel Source Interfaces (VTEPs Only)
 
-| VTEP Loopback Summary | Available Addresses | Assigned addresses | Assigned Address % |
+| VTEP Loopback Pool | Available Addresses | Assigned addresses | Assigned Address % |
 | --------------------- | ------------------- | ------------------ | ------------------ |
 | 172.18.110.0/24 | 256 | 3 | 1.18 % |
 | 172.18.120.0/24 | 256 | 1 | 0.4 % |

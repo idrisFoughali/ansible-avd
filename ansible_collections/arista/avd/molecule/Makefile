@@ -1,5 +1,6 @@
 
 MOLECULE ?= eos_cli_config_gen
+ANSIBLE_OPTIONS ?=
 
 .PHONY: help
 help: ## Display help message
@@ -12,20 +13,20 @@ help: ## Display help message
 .PHONY: run
 run: ## Execute molecule TEST sequence. By default eos_cli_config_gen. Can be set with MOLECULE=
 	cd .. && \
-	molecule test --scenario-name $(MOLECULE)
+	molecule test --scenario-name $(MOLECULE) -- $(ANSIBLE_OPTIONS)
 
 .PHONY: converge
 converge: ## Execute molecule CONVERGE sequence. By default eos_cli_config_gen. Can be set with MOLECULE=
 	cd .. && \
-	molecule converge --scenario-name $(MOLECULE)
+	molecule converge --scenario-name $(MOLECULE) -- $(ANSIBLE_OPTIONS)
 
 .PHONY: refresh-facts
 refresh-facts: ## Run all molecule scenarios
 	@while read -r MOLECULE_SCENARIO; do \
 		if [ -d "$$MOLECULE_SCENARIO" ]; then\
-			echo "Run scenrario for "$$MOLECULE_SCENARIO && \
+			echo "Run scenario for "$$MOLECULE_SCENARIO && \
 			cd .. ; \
-			molecule converge --scenario-name $$MOLECULE_SCENARIO ; \
+			molecule converge --scenario-name $$MOLECULE_SCENARIO -- $(ANSIBLE_OPTIONS); \
 			cd ./molecule ; \
 		fi \
 	done <MOLECULE_SCENARIOS.txt
@@ -34,7 +35,7 @@ refresh-facts: ## Run all molecule scenarios
 commit-facts: ## Commit updated facts for CI
 	git status --short
 	git add .
-	git commit --no-verify -m 'ci(molecule): Update CI artifacts' ./
+	git commit --no-verify -m 'CI(molecule): Update Molecule artifacts' ./
 
 .PHONY: test-git-status
 test-git-status: ## Run post molecule script to check git status
@@ -47,9 +48,9 @@ sync-facts: refresh-facts commit-facts ## Refresh and commit CI artifacts
 destroy: ## destroy all molecule scenarios
 	@for MOLECULE_SCENARIO in * ; do \
         if [ -d "$$MOLECULE_SCENARIO" ]; then\
-        echo "Run scenrario for "$$MOLECULE_SCENARIO && \
+        echo "Run scenario for "$$MOLECULE_SCENARIO && \
 		cd .. ; \
-		molecule cleanup --scenario-name $$MOLECULE_SCENARIO ; \
+		molecule cleanup --scenario-name $$MOLECULE_SCENARIO -- $(ANSIBLE_OPTIONS); \
 		cd ./molecule ; \
         fi \
     done

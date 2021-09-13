@@ -4,6 +4,7 @@
 
 - [Management](#management)
   - [Management Interfaces](#management-interfaces)
+  - [Domain-list](#domain-list)
   - [Management API HTTP](#management-api-http)
 - [Authentication](#authentication)
   - [Local Users](#local-users)
@@ -74,6 +75,19 @@ interface Management1
    ip address 192.168.1.15/24
 ```
 
+## Domain-list
+
+### Domain-list:
+ - structured-config.set.under.vrf.common-vrf
+
+### Domain-list Device Configuration
+
+```eos
+!
+ip domain-list structured-config.set.under.vrf.common-vrf
+!
+```
+
 ## Management API HTTP
 
 ### Management API HTTP Summary
@@ -126,27 +140,7 @@ username admin privilege 15 role network-admin secret sha512 $6$eJ5TvI8oru5i9e8G
 
 | Contact | Location | SNMP Traps |
 | ------- | -------- | ---------- |
-| - | TWODC_5STAGE_CLOS DC1 DC1_POD2 DC1-POD2-LEAF1A |  Disabled  |
-
-### SNMP ACLs
-| IP | ACL | VRF |
-| -- | --- | --- |
-
-
-### SNMP Local Interfaces
-
-| Local Interface | VRF |
-| --------------- | --- |
-
-### SNMP VRF Status
-
-| VRF | Status |
-| --- | ------ |
-
-
-
-
-
+| - | TWODC_5STAGE_CLOS DC1 DC1_POD2 DC1-POD2-LEAF1A | Disabled |
 
 ### SNMP Device Configuration
 
@@ -192,12 +186,11 @@ vlan internal order ascending range 1006 1199
 
 | VLAN ID | Name | Trunk Groups |
 | ------- | ---- | ------------ |
-| 110 | Tenant_A_OP_Zone_1 | none  |
-| 111 | Tenant_A_OP_Zone_2 | none  |
-| 112 | Tenant_A_OP_Zone_3 | none  |
-| 2500 | web-l2-vlan | none  |
-| 2600 | web-l2-vlan-2 | none  |
-| 4092 | L2LEAF_INBAND_MGMT | none  |
+| 110 | Tenant_A_OP_Zone_1 | - |
+| 111 | Tenant_A_OP_Zone_2 | - |
+| 112 | Tenant_A_OP_Zone_3 | - |
+| 2500 | web-l2-vlan | - |
+| 2600 | web-l2-vlan-2 | - |
 
 ## VLANs Device Configuration
 
@@ -217,9 +210,6 @@ vlan 2500
 !
 vlan 2600
    name web-l2-vlan-2
-!
-vlan 4092
-   name L2LEAF_INBAND_MGMT
 ```
 
 # Interfaces
@@ -314,10 +304,9 @@ interface Loopback1
 
 | Interface | Description | VRF |  MTU | Shutdown |
 | --------- | ----------- | --- | ---- | -------- |
-| Vlan110 |  Tenant_A_OP_Zone_1  |  Common_VRF  |  -  |  false  |
+| Vlan110 |  set from structured_config on svi (was Tenant_A_OP_Zone_1)  |  Common_VRF  |  -  |  false  |
 | Vlan111 |  Tenant_A_OP_Zone_2  |  Common_VRF  |  -  |  true  |
 | Vlan112 |  Tenant_A_OP_Zone_3  |  Common_VRF  |  -  |  false  |
-| Vlan4092 |  L2LEAF_INBAND_MGMT  |  default  |  1500  |  false  |
 
 #### IPv4
 
@@ -326,7 +315,6 @@ interface Loopback1
 | Vlan110 |  Common_VRF  |  -  |  10.1.10.1/24  |  -  |  -  |  -  |  -  |
 | Vlan111 |  Common_VRF  |  -  |  10.1.11.1/24  |  -  |  -  |  -  |  -  |
 | Vlan112 |  Common_VRF  |  -  |  10.1.12.1/24  |  -  |  -  |  -  |  -  |
-| Vlan4092 |  default  |  172.21.120.2/24  |  -  |  172.21.120.1  |  -  |  -  |  -  |
 
 
 ### VLAN Interfaces Device Configuration
@@ -334,7 +322,7 @@ interface Loopback1
 ```eos
 !
 interface Vlan110
-   description Tenant_A_OP_Zone_1
+   description set from structured_config on svi (was Tenant_A_OP_Zone_1)
    no shutdown
    vrf Common_VRF
    ip address virtual 10.1.10.1/24
@@ -354,14 +342,6 @@ interface Vlan112
    Comment created from raw_eos_cli under SVI 112 in VRF Common_VRF
    EOF
 
-!
-interface Vlan4092
-   description L2LEAF_INBAND_MGMT
-   no shutdown
-   mtu 1500
-   ip address 172.21.120.2/24
-   ip virtual-router address 172.21.120.1
-   ip attached-host route export 19
 ```
 
 ## VXLAN Interface
@@ -372,15 +352,15 @@ interface Vlan4092
 
 #### UDP port: 4789
 
-#### VLAN to VNI Mappings
+#### VLAN to VNI and Flood List Mappings
 
-| VLAN | VNI |
-| ---- | --- |
-| 110 | 10110 |
-| 111 | 50111 |
-| 112 | 50112 |
-| 2500 | 2500 |
-| 2600 | 2600 |
+| VLAN | VNI | Flood List |
+| ---- | --- | ---------- |
+| 110 | 10110 | - |
+| 111 | 50111 | - |
+| 112 | 50112 | - |
+| 2500 | 2500 | - |
+| 2600 | 2600 | - |
 
 #### VRF to VNI Mappings
 
@@ -393,6 +373,7 @@ interface Vlan4092
 ```eos
 !
 interface Vxlan1
+   description DC1-POD2-LEAF1A_VTEP
    vxlan source-interface Loopback1
    vxlan udp-port 4789
    vxlan vlan 110 vni 10110
@@ -502,7 +483,6 @@ ip route vrf MGMT 0.0.0.0/0 192.168.1.254
 | Settings | Value |
 | -------- | ----- |
 | Address Family | ipv4 |
-| Remote AS | 65120 |
 | Send community | all |
 | Maximum routes | 12000 |
 
@@ -513,8 +493,8 @@ ip route vrf MGMT 0.0.0.0/0 192.168.1.254
 | 172.16.120.1 | 65120 | default |
 | 172.16.120.2 | 65120 | default |
 | 172.17.10.13 | 65102 | default |
-| 172.17.120.0 | Inherited from peer group IPv4-UNDERLAY-PEERS | default |
-| 172.17.120.2 | Inherited from peer group IPv4-UNDERLAY-PEERS | default |
+| 172.17.120.0 | 65120 | default |
+| 172.17.120.2 | 65120 | default |
 
 ### Router BGP EVPN Address Family
 
@@ -555,7 +535,6 @@ router bgp 65121
    neighbor EVPN-OVERLAY-PEERS send-community
    neighbor EVPN-OVERLAY-PEERS maximum-routes 0
    neighbor IPv4-UNDERLAY-PEERS peer group
-   neighbor IPv4-UNDERLAY-PEERS remote-as 65120
    neighbor IPv4-UNDERLAY-PEERS password 7 AQQvKeimxJu+uGQ/yYvv9w==
    neighbor IPv4-UNDERLAY-PEERS send-community
    neighbor IPv4-UNDERLAY-PEERS maximum-routes 12000
@@ -572,10 +551,11 @@ router bgp 65121
    neighbor 172.17.10.13 description DC1-RS2_Ethernet3
    neighbor 172.17.10.13 bfd
    neighbor 172.17.120.0 peer group IPv4-UNDERLAY-PEERS
+   neighbor 172.17.120.0 remote-as 65120
    neighbor 172.17.120.0 description DC1-POD2-SPINE1_Ethernet3
    neighbor 172.17.120.2 peer group IPv4-UNDERLAY-PEERS
+   neighbor 172.17.120.2 remote-as 65120
    neighbor 172.17.120.2 description DC1-POD2-SPINE2_Ethernet3
-   redistribute attached-host
    redistribute connected route-map RM-CONN-2-BGP
    !
    vlan 110
@@ -664,12 +644,6 @@ IGMP snooping is globally enabled.
 
 ### Prefix-lists Summary
 
-#### PL-L2LEAF-INBAND-MGMT
-
-| Sequence | Action |
-| -------- | ------ |
-| 10 | permit 172.21.120.0/24 |
-
 #### PL-LOOPBACKS-EVPN-OVERLAY
 
 | Sequence | Action |
@@ -680,9 +654,6 @@ IGMP snooping is globally enabled.
 ### Prefix-lists Device Configuration
 
 ```eos
-!
-ip prefix-list PL-L2LEAF-INBAND-MGMT
-   seq 10 permit 172.21.120.0/24
 !
 ip prefix-list PL-LOOPBACKS-EVPN-OVERLAY
    seq 10 permit 172.16.120.0/24 eq 32
@@ -698,7 +669,6 @@ ip prefix-list PL-LOOPBACKS-EVPN-OVERLAY
 | Sequence | Type | Match and/or Set |
 | -------- | ---- | ---------------- |
 | 10 | permit | match ip address prefix-list PL-LOOPBACKS-EVPN-OVERLAY |
-| 20 | permit | match ip address prefix-list PL-L2LEAF-INBAND-MGMT |
 
 #### RM-EVPN-FILTER-AS65120
 
@@ -712,9 +682,6 @@ ip prefix-list PL-LOOPBACKS-EVPN-OVERLAY
 !
 route-map RM-CONN-2-BGP permit 10
    match ip address prefix-list PL-LOOPBACKS-EVPN-OVERLAY
-!
-route-map RM-CONN-2-BGP permit 20
-   match ip address prefix-list PL-L2LEAF-INBAND-MGMT
 !
 route-map RM-EVPN-FILTER-AS65120 deny 10
    match as 65120

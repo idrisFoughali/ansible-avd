@@ -4,6 +4,7 @@
 
 - [Management](#management)
   - [Management Interfaces](#management-interfaces)
+  - [Domain-list](#domain-list)
   - [Management API HTTP](#management-api-http)
 - [Authentication](#authentication)
   - [Local Users](#local-users)
@@ -75,6 +76,19 @@ interface Management1
    ip address 192.168.1.22/24
 ```
 
+## Domain-list
+
+### Domain-list:
+ - structured-config.set.under.vrf.common-vrf
+
+### Domain-list Device Configuration
+
+```eos
+!
+ip domain-list structured-config.set.under.vrf.common-vrf
+!
+```
+
 ## Management API HTTP
 
 ### Management API HTTP Summary
@@ -127,27 +141,7 @@ username admin privilege 15 role network-admin secret sha512 $6$eJ5TvI8oru5i9e8G
 
 | Contact | Location | SNMP Traps |
 | ------- | -------- | ---------- |
-| - | TWODC_5STAGE_CLOS DC2 DC2_POD1 DC2-POD1-LEAF1A |  Disabled  |
-
-### SNMP ACLs
-| IP | ACL | VRF |
-| -- | --- | --- |
-
-
-### SNMP Local Interfaces
-
-| Local Interface | VRF |
-| --------------- | --- |
-
-### SNMP VRF Status
-
-| VRF | Status |
-| --- | ------ |
-
-
-
-
-
+| - | TWODC_5STAGE_CLOS DC2 DC2_POD1 DC2-POD1-LEAF1A | Disabled |
 
 ### SNMP Device Configuration
 
@@ -195,7 +189,7 @@ vlan internal order ascending range 1006 1199
 
 | VLAN ID | Name | Trunk Groups |
 | ------- | ---- | ------------ |
-| 4092 | L2LEAF_INBAND_MGMT | none  |
+| 4092 | L2LEAF_INBAND_MGMT | - |
 
 ## VLANs Device Configuration
 
@@ -364,12 +358,6 @@ interface Vlan4092
 
 #### UDP port: 4789
 
-#### VLAN to VNI Mappings
-
-| VLAN | VNI |
-| ---- | --- |
-| N/A | N/A |
-
 #### VRF to VNI Mappings
 
 | VLAN | VNI |
@@ -381,6 +369,7 @@ interface Vlan4092
 ```eos
 !
 interface Vxlan1
+   description DC2-POD1-LEAF1A_VTEP
    vxlan source-interface Loopback1
    vxlan udp-port 4789
    vxlan vrf Common_VRF vni 1025
@@ -486,7 +475,6 @@ ip route vrf MGMT 0.0.0.0/0 192.168.1.254
 | Settings | Value |
 | -------- | ----- |
 | Address Family | ipv4 |
-| Remote AS | 65210 |
 | Send community | all |
 | Maximum routes | 12000 |
 
@@ -500,8 +488,8 @@ ip route vrf MGMT 0.0.0.0/0 192.168.1.254
 | 172.16.10.2 | 65102 | default |
 | 172.16.110.1 | 65110 | default |
 | 172.16.110.3 | 65111 | default |
-| 172.17.210.0 | Inherited from peer group IPv4-UNDERLAY-PEERS | default |
-| 172.17.210.2 | Inherited from peer group IPv4-UNDERLAY-PEERS | default |
+| 172.17.210.0 | 65210 | default |
+| 172.17.210.2 | 65210 | default |
 
 ### Router BGP EVPN Address Family
 
@@ -533,7 +521,6 @@ router bgp 65211
    neighbor EVPN-OVERLAY-PEERS send-community
    neighbor EVPN-OVERLAY-PEERS maximum-routes 0
    neighbor IPv4-UNDERLAY-PEERS peer group
-   neighbor IPv4-UNDERLAY-PEERS remote-as 65210
    neighbor IPv4-UNDERLAY-PEERS password 7 AQQvKeimxJu+uGQ/yYvv9w==
    neighbor IPv4-UNDERLAY-PEERS send-community
    neighbor IPv4-UNDERLAY-PEERS maximum-routes 12000
@@ -557,8 +544,10 @@ router bgp 65211
    neighbor 172.16.110.3 remote-as 65111
    neighbor 172.16.110.3 description DC1-POD1-LEAF1A
    neighbor 172.17.210.0 peer group IPv4-UNDERLAY-PEERS
+   neighbor 172.17.210.0 remote-as 65210
    neighbor 172.17.210.0 description DC2-POD1-SPINE1_Ethernet3
    neighbor 172.17.210.2 peer group IPv4-UNDERLAY-PEERS
+   neighbor 172.17.210.2 remote-as 65210
    neighbor 172.17.210.2 description DC2-POD1-SPINE2_Ethernet3
    redistribute attached-host
    redistribute connected route-map RM-CONN-2-BGP

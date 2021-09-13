@@ -18,7 +18,6 @@ router_bgp:
       route_map_in: RM-MLAG-PEER-IN
     IPv4-UNDERLAY-PEERS:
       type: ipv4
-      remote_as: 65110
       password: AQQvKeimxJu+uGQ/yYvv9w==
       maximum_routes: 12000
       send_community: all
@@ -42,12 +41,22 @@ router_bgp:
     172.20.110.3:
       peer_group: MLAG-IPv4-UNDERLAY-PEER
       description: DC1-POD1-LEAF2B
-    172.17.110.4:
+    172.17.110.8:
       peer_group: IPv4-UNDERLAY-PEERS
+      remote_as: 65110
       description: DC1-POD1-SPINE1_Ethernet4
-    172.17.110.6:
+    172.17.110.10:
       peer_group: IPv4-UNDERLAY-PEERS
+      remote_as: 65110
       description: DC1-POD1-SPINE2_Ethernet4
+    172.17.110.12:
+      peer_group: IPv4-UNDERLAY-PEERS
+      remote_as: 65110
+      description: DC1-POD1-SPINE1_Ethernet7
+    172.17.110.14:
+      peer_group: IPv4-UNDERLAY-PEERS
+      remote_as: 65110
+      description: DC1-POD1-SPINE2_Ethernet7
     172.16.110.3:
       peer_group: EVPN-OVERLAY-PEERS
       description: DC1-POD1-LEAF1A
@@ -158,7 +167,7 @@ spanning_tree:
   mst_instances:
     '0':
       priority: 4096
-  no_spanning_tree_vlan: 4093-4094
+  no_spanning_tree_vlan: 4094
 local_users:
   admin:
     privilege: 15
@@ -178,20 +187,16 @@ eos_cli: "interface Loopback1002\n  description Loopback created from raw_eos_cl
   \ under l3leaf node-group RACK2_MLAG\n\ninterface Loopback1111\n  description Loopback\
   \ created from raw_eos_cli under platform_settings vEOS-LAB\n\ninterface Loopback1000\n\
   \  description Loopback created from raw_eos_cli under VRF Common_VRF\n"
+struct_cfg:
+  domain_list:
+  - structured-config.set.on.node
+  - structured-config.set.under.vrf.common-vrf
 vlans:
-  4093:
-    tenant: system
-    name: LEAF_PEER_L3
-    trunk_groups:
-    - LEAF_PEER_L3
   4094:
     tenant: system
     name: MLAG_PEER
     trunk_groups:
     - MLAG
-  4085:
-    tenant: system
-    name: L2LEAF_INBAND_MGMT
   110:
     tenant: Tenant_A
     name: Tenant_A_OP_Zone_1
@@ -207,34 +212,26 @@ vlans:
   2600:
     tenant: Tenant_A
     name: web-l2-vlan-2
+  4085:
+    tenant: system
+    name: L2LEAF_INBAND_MGMT
 vlan_interfaces:
-  Vlan4093:
-    description: MLAG_PEER_L3_PEERING
-    shutdown: false
-    ip_address: 172.20.110.2/31
-    mtu: 1500
   Vlan4094:
     description: MLAG_PEER
     shutdown: false
-    ip_address: 172.19.110.2/31
+    ip_address: 172.20.110.2/31
     no_autostate: true
     mtu: 1500
-  Vlan4085:
-    description: L2LEAF_INBAND_MGMT
-    shutdown: false
-    mtu: 1500
-    ip_address: 172.21.110.2/24
-    ip_virtual_router_address: 172.21.110.1
-    ip_attached_host_route_export:
-      distance: 19
   Vlan110:
     tenant: Tenant_A
     tags:
     - opzone
-    description: Tenant_A_OP_Zone_1
+    description: set from structured_config on svi for DC1-POD1-LEAF2A (was Tenant_A_OP_Zone_1)
     shutdown: false
     vrf: Common_VRF
     ip_address_virtual: 10.1.10.1/24
+    struct_cfg:
+      description: set from structured_config on svi for DC1-POD1-LEAF2A (was Tenant_A_OP_Zone_1)
   Vlan111:
     tenant: Tenant_A
     tags:
@@ -258,6 +255,14 @@ vlan_interfaces:
       EOF
 
       '
+  Vlan4085:
+    description: L2LEAF_INBAND_MGMT
+    shutdown: false
+    mtu: 1500
+    ip_address: 172.21.110.2/24
+    ip_virtual_router_address: 172.21.110.1
+    ip_attached_host_route_export:
+      distance: 19
 port_channel_interfaces:
   Port-Channel5:
     description: MLAG_PEER_DC1-POD1-LEAF2B_Po5
@@ -286,13 +291,15 @@ port_channel_interfaces:
     mlag: 16
     service_profile: bar
   Port-Channel17:
-    description: server-1_PortChannel
+    description: Set using structured_config on server adapter port-channel
     type: switched
     shutdown: false
     mode: access
     vlans: 110
     mlag: 17
     service_profile: foo
+    struct_cfg:
+      description: Set using structured_config on server adapter port-channel
   Port-Channel18:
     description: server-1_PortChannel
     type: switched
@@ -355,7 +362,7 @@ ethernet_interfaces:
       enable: true
     type: routed
     shutdown: false
-    ip_address: 172.17.110.5/31
+    ip_address: 172.17.110.9/31
   Ethernet2:
     peer: DC1-POD1-SPINE2
     peer_interface: Ethernet4
@@ -367,7 +374,7 @@ ethernet_interfaces:
       enable: true
     type: routed
     shutdown: false
-    ip_address: 172.17.110.7/31
+    ip_address: 172.17.110.11/31
   Ethernet3:
     peer: DC1-POD1-L2LEAF2A
     peer_interface: Ethernet1
@@ -388,6 +395,30 @@ ethernet_interfaces:
     channel_group:
       id: 3
       mode: active
+  Ethernet11:
+    peer: DC1-POD1-SPINE1
+    peer_interface: Ethernet7
+    peer_type: spine
+    description: P2P_LINK_TO_DC1-POD1-SPINE1_Ethernet7
+    mtu: 1500
+    service_profile: QOS-PROFILE
+    ptp:
+      enable: true
+    type: routed
+    shutdown: false
+    ip_address: 172.17.110.13/31
+  Ethernet12:
+    peer: DC1-POD1-SPINE2
+    peer_interface: Ethernet7
+    peer_type: spine
+    description: P2P_LINK_TO_DC1-POD1-SPINE2_Ethernet7
+    mtu: 1500
+    service_profile: QOS-PROFILE
+    ptp:
+      enable: true
+    type: routed
+    shutdown: false
+    ip_address: 172.17.110.15/31
   Ethernet7:
     peer: DC2-POD1-LEAF1A
     peer_interface: Ethernet6
@@ -421,7 +452,7 @@ ethernet_interfaces:
     peer: server-1
     peer_interface: Eth3
     peer_type: server
-    description: server-1_Eth3
+    description: Set using structured_config on server adapter
     type: switched
     shutdown: false
     mode: access
@@ -437,6 +468,8 @@ ethernet_interfaces:
       EOF
 
       '
+    struct_cfg:
+      description: Set using structured_config on server adapter
   Ethernet18:
     peer: server-1
     peer_interface: Eth5
@@ -480,7 +513,7 @@ ethernet_interfaces:
 mlag_configuration:
   domain_id: RACK2_MLAG
   local_interface: Vlan4094
-  peer_address: 172.19.110.3
+  peer_address: 172.20.110.3
   peer_address_heartbeat:
     peer_ip: 192.168.1.9
     vrf: MGMT
@@ -558,14 +591,13 @@ router_bfd:
     multiplier: 3
 ip_igmp_snooping:
   globally_enabled: true
-vxlan_tunnel_interface:
+vxlan_interface:
   Vxlan1:
     description: DC1-POD1-LEAF2A_VTEP
-    source_interface: Loopback1
-    virtual_router:
-      encapsulation_mac_address: mlag-system-id
-    vxlan_udp_port: 4789
-    vxlan_vni_mappings:
+    vxlan:
+      source_interface: Loopback1
+      virtual_router_encapsulation_mac_address: mlag-system-id
+      udp_port: 4789
       vlans:
         110:
           vni: 10110
@@ -581,3 +613,6 @@ vxlan_tunnel_interface:
         Common_VRF:
           vni: 1025
 ip_virtual_router_mac_address: 00:1c:73:00:dc:01
+domain_list:
+- structured-config.set.on.node
+- structured-config.set.under.vrf.common-vrf

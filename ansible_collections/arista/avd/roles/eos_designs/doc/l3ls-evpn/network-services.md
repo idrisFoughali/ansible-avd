@@ -12,6 +12,7 @@
 ```yaml
 # On mlag leafs, an SVI interface is defined per vrf, to establish iBGP peering. | Required (when mlag leafs in topology)
 # The SVI id will be derived from the base vlan defined: mlag_ibgp_peering_vrfs.base_vlan + vrf_vni
+# The SVI ip address derived from mlag_l3_peer_ipv4_pool is re-used across all iBGP peerings.
 mlag_ibgp_peering_vrfs:
   base_vlan: < 1-4000 | default -> 3000 >
 
@@ -24,7 +25,7 @@ mlag_ibgp_peering_vrfs:
 # For loopback or 32-bit ASN/number the VNI can only be a 16-bit number.
 # For 16-bit ASN/number the VNI can be a 32-bit number.
 evpn_rd_type:
-  admin_subfield: < "overlay_loopback" | "vtep_loopback" | "leaf_asn" | "spine_asn" | < IPv4 Address > | <0-65535> | <0-4294967295> | default -> "overlay_loopback" >
+  admin_subfield: < "overlay_loopback" | "vtep_loopback" | "bgp_as" | < IPv4 Address > | <0-65535> | <0-4294967295> | default -> "overlay_loopback" >
 
 # Specify RT type | Optional
 # Route Target (RT) for L2 / L3 services is set to <vni>:<vni> per default
@@ -35,7 +36,7 @@ evpn_rd_type:
 # For 32-bit ASN/number the VNI can only be a 16-bit number.
 # For 16-bit ASN/number the VNI can be a 32-bit number.
 evpn_rt_type:
-  admin_subfield: < "leaf_asn" | "spine_asn" | "vni" | <0-65535> | <0-4294967295> | default -> "vni" >
+  admin_subfield: < "bgp_as" | "vni" | <0-65535> | <0-4294967295> | default -> "vni" >
 
 # Optional profiles to apply on SVI interfaces
 # Each profile can support all or some of the following keys according your own needs.
@@ -51,7 +52,7 @@ svi_profiles:
     ip_helpers:
       < IPv4 dhcp server IP >:
         source_interface: < interface-name >
-        source_vrf: < VRF to originate DHCP relay packets to DHCP server. If not set, uses current VRF >
+        source_vrf: < VRF to originate DHCP relay packets to DHCP server >
 
 # Dictionary of tenants, to define network services: L3 VRFs and L2 VLNAS.
 
@@ -66,6 +67,10 @@ tenants:
     # VXLAN VNI is derived from the base number with simple addition.
     # e.g. mac_vrf_vni_base = 10000, svi 100 = VNI 10100, svi 300 = VNI 10300.
     mac_vrf_vni_base: < 10000-16770000 >
+
+    # Base number for vlan_aware_bundle | Optional.
+    # The "Assigned Number" part of RD/RT is derived from vrf_vni + vlan_aware_bundle_number_base.
+    vlan_aware_bundle_number_base: < number | default -> 0 >
 
     # MLAG IBGP peering per VRF | Optional
     # By default an IBGP peering is configured per VRF between MLAG peers on separate VLANs.
@@ -165,6 +170,10 @@ tenants:
                 raw_eos_cli: |
                   < multiline eos cli >
 
+                # Custom structured config added under vlan_interfaces.<interface> for eos_cli_config_gen
+                # Overrides the setting on SVI level.
+                structured_config: < dictionary >
+
               < l3_leaf_inventory_hostname_2 >:
                 ip_address: < IPv4_address/Mask >
 
@@ -174,6 +183,9 @@ tenants:
             # EOS CLI rendered directly on the VLAN interface in the final EOS configuration
             raw_eos_cli: |
               < multiline eos cli >
+
+            # Custom structured config added under vlan_interfaces.<interface> for eos_cli_config_gen
+            structured_config: < dictionary >
 
           < 1-4096 >:
             name: < description >
@@ -189,10 +201,12 @@ tenants:
             nodes: [ < node_1 >, < node_2 >, < node_1 > ]
             description: < description >
             enabled: < true | false >
-            mtu: <mtu >
+            mtu: < mtu >
             # EOS CLI rendered directly on the Ethernet interface in the final EOS configuration
             raw_eos_cli: |
               < multiline eos cli >
+            # Custom structured config added under ethernet_interfaces.<interface> for eos_cli_config_gen
+            structured_config: < dictionary >
 
           # For sub-interfaces the dot1q vlan is derived from the interface name by default, but can also be specified.
           - interfaces: [ <interface_name1.sub-if-id>, <interface_name2.sub-if-id> ]
@@ -201,7 +215,7 @@ tenants:
             nodes: [ < node_1 >, < node_2 > ]
             description: < description >
             enabled: < true | false >
-            mtu: <mtu >
+            mtu: < mtu - should only be used for platforms supporting mtu per subinterface >
 
         # Dictionary of static routes | Optional.
         # This will create static routes inside the tenant VRF, if none specified, all l3leafs that carry the VRF also get the static routes.
@@ -210,6 +224,11 @@ tenants:
         static_routes:
           - destination_address_prefix: < IPv4_address/Mask >
             gateway: < IPv4_address >
+            distance: < 1-255 >
+            tag: < 0-4294967295 >
+            name: < description >
+            metric: < 0-4294967295 >
+            interface: < interface >
             nodes: [ < node_1 >, < node_2 >]
 
         # Non-selectively enabling or disabling redistribute static inside the VRF | Optional.
@@ -248,6 +267,13 @@ tenants:
           raw_eos_cli: |
             < multiline eos cli >
 
+        bgp:
+          # EOS CLI rendered directly on the Router BGP, VRF definition in the final EOS configuration
+          raw_eos_cli: |
+            < multiline eos cli >
+          # Custom structured config added under router_bgp.vrfs.<vrf> for eos_cli_config_gen
+          structured_config: < dictionary >
+
         # Optional configuration of extra route-targets for this VRF. Useful for route-leaking or gateway between address families.
         additional_route_targets:
           - type: < import | export >
@@ -259,6 +285,8 @@ tenants:
         # EOS CLI rendered directly on the root level of the final EOS configuration
         raw_eos_cli: |
           < multiline eos cli >
+        # Custom structured config for eos_cli_config_gen
+        structured_config: < dictionary >
 
       < tenant_a_vrf_2 >:
         vrf_vni: < 1-1024 >

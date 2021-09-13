@@ -91,27 +91,7 @@ username admin privilege 15 role network-admin secret sha512 $6$eJ5TvI8oru5i9e8G
 
 | Contact | Location | SNMP Traps |
 | ------- | -------- | ---------- |
-| - | TWODC_5STAGE_CLOS DC1 DC1_POD1 DC1-POD1-SPINE1 |  Disabled  |
-
-### SNMP ACLs
-| IP | ACL | VRF |
-| -- | --- | --- |
-
-
-### SNMP Local Interfaces
-
-| Local Interface | VRF |
-| --------------- | --- |
-
-### SNMP VRF Status
-
-| VRF | Status |
-| --- | ------ |
-
-
-
-
-
+| - | TWODC_5STAGE_CLOS DC1 DC1_POD1 DC1-POD1-SPINE1 | Disabled |
 
 ### SNMP Device Configuration
 
@@ -171,9 +151,11 @@ vlan internal order ascending range 1006 1199
 | Ethernet1 | P2P_LINK_TO_DC1-SUPER-SPINE1_Ethernet1 | routed | - | 172.16.11.1/31 | default | 1500 | false | - | - |
 | Ethernet2 | P2P_LINK_TO_DC1-SUPER-SPINE2_Ethernet1 | routed | - | 172.16.11.65/31 | default | 1500 | false | - | - |
 | Ethernet3 | P2P_LINK_TO_DC1-POD1-LEAF1A_Ethernet1 | routed | - | 172.17.110.0/31 | default | 1500 | false | - | - |
-| Ethernet4 | P2P_LINK_TO_DC1-POD1-LEAF2A_Ethernet1 | routed | - | 172.17.110.4/31 | default | 1500 | false | - | - |
-| Ethernet5 | P2P_LINK_TO_DC1-POD1-LEAF2B_Ethernet1 | routed | - | 172.17.110.8/31 | default | 1500 | false | - | - |
+| Ethernet4 | P2P_LINK_TO_DC1-POD1-LEAF2A_Ethernet1 | routed | - | 172.17.110.8/31 | default | 1500 | false | - | - |
+| Ethernet5 | P2P_LINK_TO_DC1-POD1-LEAF2B_Ethernet1 | routed | - | 172.17.110.16/31 | default | 1500 | false | - | - |
 | Ethernet6 | P2P_LINK_TO_DC1-RS1_Ethernet2 | routed | - | 172.17.10.2/31 | default | 1500 | false | - | - |
+| Ethernet7 | P2P_LINK_TO_DC1-POD1-LEAF2A_Ethernet11 | routed | - | 172.17.110.12/31 | default | 1500 | false | - | - |
+| Ethernet8 | P2P_LINK_TO_DC1-POD1-LEAF2B_Ethernet11 | routed | - | 172.17.110.20/31 | default | 1500 | false | - | - |
 
 ### Ethernet Interfaces Device Configuration
 
@@ -211,7 +193,7 @@ interface Ethernet4
    no shutdown
    mtu 1500
    no switchport
-   ip address 172.17.110.4/31
+   ip address 172.17.110.8/31
    ptp enable
    service-profile QOS-PROFILE
 !
@@ -220,7 +202,7 @@ interface Ethernet5
    no shutdown
    mtu 1500
    no switchport
-   ip address 172.17.110.8/31
+   ip address 172.17.110.16/31
    ptp enable
    service-profile QOS-PROFILE
 !
@@ -230,6 +212,24 @@ interface Ethernet6
    mtu 1500
    no switchport
    ip address 172.17.10.2/31
+   service-profile QOS-PROFILE
+!
+interface Ethernet7
+   description P2P_LINK_TO_DC1-POD1-LEAF2A_Ethernet11
+   no shutdown
+   mtu 1500
+   no switchport
+   ip address 172.17.110.12/31
+   ptp enable
+   service-profile QOS-PROFILE
+!
+interface Ethernet8
+   description P2P_LINK_TO_DC1-POD1-LEAF2B_Ethernet11
+   no shutdown
+   mtu 1500
+   no switchport
+   ip address 172.17.110.20/31
+   ptp enable
    service-profile QOS-PROFILE
 ```
 
@@ -361,8 +361,10 @@ ip route vrf MGMT 0.0.0.0/0 192.168.1.254
 | 172.16.210.3 | 65211 | default |
 | 172.17.10.3 | 65101 | default |
 | 172.17.110.1 | 65111 | default |
-| 172.17.110.5 | 65112 | default |
 | 172.17.110.9 | 65112 | default |
+| 172.17.110.13 | 65112 | default |
+| 172.17.110.17 | 65112 | default |
+| 172.17.110.21 | 65112 | default |
 
 ### Router BGP EVPN Address Family
 
@@ -428,12 +430,18 @@ router bgp 65110
    neighbor 172.17.110.1 peer group IPv4-UNDERLAY-PEERS
    neighbor 172.17.110.1 remote-as 65111
    neighbor 172.17.110.1 description DC1-POD1-LEAF1A_Ethernet1
-   neighbor 172.17.110.5 peer group IPv4-UNDERLAY-PEERS
-   neighbor 172.17.110.5 remote-as 65112
-   neighbor 172.17.110.5 description DC1-POD1-LEAF2A_Ethernet1
    neighbor 172.17.110.9 peer group IPv4-UNDERLAY-PEERS
    neighbor 172.17.110.9 remote-as 65112
-   neighbor 172.17.110.9 description DC1-POD1-LEAF2B_Ethernet1
+   neighbor 172.17.110.9 description DC1-POD1-LEAF2A_Ethernet1
+   neighbor 172.17.110.13 peer group IPv4-UNDERLAY-PEERS
+   neighbor 172.17.110.13 remote-as 65112
+   neighbor 172.17.110.13 description DC1-POD1-LEAF2A_Ethernet11
+   neighbor 172.17.110.17 peer group IPv4-UNDERLAY-PEERS
+   neighbor 172.17.110.17 remote-as 65112
+   neighbor 172.17.110.17 description DC1-POD1-LEAF2B_Ethernet1
+   neighbor 172.17.110.21 peer group IPv4-UNDERLAY-PEERS
+   neighbor 172.17.110.21 remote-as 65112
+   neighbor 172.17.110.21 description DC1-POD1-LEAF2B_Ethernet11
    redistribute connected route-map RM-CONN-2-BGP
    !
    address-family evpn

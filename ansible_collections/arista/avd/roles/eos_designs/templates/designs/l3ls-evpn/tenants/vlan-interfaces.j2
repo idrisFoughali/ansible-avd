@@ -1,4 +1,4 @@
-{# Leaf tenant vlan interfaces #}
+{# tenant vlan interfaces #}
 vlan_interfaces:
 {% for tenant in switch.tenants | arista.avd.natural_sort %}
 {%     for vrf in switch.tenants[tenant].vrfs | arista.avd.natural_sort %}
@@ -30,6 +30,10 @@ vlan_interfaces:
                                      svi_profile.nodes[inventory_hostname].raw_eos_cli,
                                      svi_config.raw_eos_cli,
                                      svi_profile.raw_eos_cli) %}
+{%             set svi_structured_config = svi_config.nodes[inventory_hostname].structured_config | arista.avd.default(
+                                           svi_profile.nodes[inventory_hostname].structured_config,
+                                           svi_config.structured_config,
+                                           svi_profile.structured_config) %}
   Vlan{{ svi | int }}:
     tenant: {{ tenant }}
     tags: {{ svi_tags }}
@@ -65,17 +69,16 @@ vlan_interfaces:
     ip_helpers:
 {%                 for helper_ip in svi_ip_helpers %}
       {{ helper_ip }}:
-        source_interface: {{ svi_ip_helpers[helper_ip].source_interface }}
-{%                     if svi_ip_helpers[helper_ip].source_vrf is arista.avd.defined %}
-        vrf: {{ svi_ip_helpers[helper_ip].source_vrf }}
-{%                     else %}
-        vrf: {{ vrf }}
-{%                     endif %}
+        source_interface: {{ svi_ip_helpers[helper_ip].source_interface | arista.avd.default }}
+        vrf: {{ svi_ip_helpers[helper_ip].source_vrf | arista.avd.default }}
 {%                 endfor %}
 {%             endif %}
 {%             if svi_raw_eos_cli is arista.avd.defined %}
     eos_cli: |
       {{ svi_raw_eos_cli | indent(6,false) }}
+{%             endif %}
+{%             if svi_structured_config is arista.avd.defined %}
+    struct_cfg: {{ svi_structured_config }}
 {%             endif %}
 {%         endfor %}
 {# VLAN interface for iBGP peering in overlay VRFs #}
@@ -90,7 +93,7 @@ vlan_interfaces:
     shutdown: false
     description: "MLAG_PEER_L3_iBGP: vrf {{ vrf }}"
     vrf: {{ vrf }}
-    ip_address: {{ switch.mlag_l3_ip }}/31
+    ip_address: {{ switch.mlag_l3_ip | arista.avd.default(switch.mlag_ip) }}/31
     mtu: {{ p2p_uplinks_mtu }}
 {%             endif %}
 {%         endif %}

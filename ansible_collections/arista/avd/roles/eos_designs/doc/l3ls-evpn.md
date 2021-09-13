@@ -16,7 +16,7 @@ The following topologies are supported:
 | RFC5549(eBGP) | eBGP | [ 3 stage ] + L2 Leafs |
 
 <div style="text-align:center">
-  <img src="../../../../media/topology.gif" />
+  <img src="../../../media/topology.gif" />
 </div>
 
 Across all designs the following functionality is provided:
@@ -36,6 +36,8 @@ all:
     < DC-group-name >:
       children:
         < Super Spines group name >:
+          vars:
+            type: < node type >
           hosts:
             < super-spine name >:
               ansible_host: < management IP >
@@ -49,4 +51,3 @@ all:
             < leaf group >:
               <-- omitted -->
 ```
-
