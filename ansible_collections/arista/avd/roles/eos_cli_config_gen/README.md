@@ -284,11 +284,23 @@ aaa_authorization:
 ```yaml
 aaa_accounting:
   exec:
+    console:
+      type: < none | start-stop | stop-only >
+      group: < group_name >
     default:
       type: < none | start-stop | stop-only >
       group: < group_name >
   commands:
-    commands_default:
+    console:
+      - commands: < all | 0-15 >
+        type: < none | start-stop | stop-only >
+        group: < group_name >
+        logging: < true | false >
+      - commands: < all | 0-15 >
+        type: < none | start-stop | stop-only >
+        group: < group_name >
+        logging: < true | false >
+    default:
       - commands: < all | 0-15 >
         type: < none | start-stop | stop-only >
         group: < group_name >
@@ -1020,6 +1032,9 @@ vlan_interfaces:
       - < IPv4_address/Mask >
     ip_virtual_router_address: < IPv4_address >
     ip_address_virtual: < IPv4_address/Mask >
+    ip_address_virtual_secondaries:
+      - < IPv4_address/Mask >
+      - < IPv4_address/Mask >
     ip_helpers:
       < ip_helper_address_1 >:
         source_interface: < source_interface_name >
@@ -1630,8 +1645,14 @@ logging:
     < vrf_name >:
       source_interface: < source_interface_name >
       hosts:
-        - < syslog_server_1>
-        - < syslog_server_2>
+        < syslog_server_1 >:
+          protocol: < tcp | udp (default udp) >
+          ports:
+            < custom_port_1 >
+            < custom_port_2 >
+        < syslog_server_2 >:
+          ports:
+            < custom_port_1 >
   policy:
     match:
       match_lists:
@@ -2101,6 +2122,8 @@ router_bgp:
       enabled: < true | false >
       threshold: < integer >
       window: < integer >
+    route:
+      import_match_failure_action: < 'discard' >
   address_family_rtc:
     peer_groups:
       < peer_group_name >:
